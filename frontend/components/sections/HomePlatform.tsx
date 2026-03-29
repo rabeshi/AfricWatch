@@ -132,6 +132,11 @@ export function HomePlatform() {
             onCountrySelect={(iso3) => setSelectedIso3(iso3)}
           />
         </div>
+        {(mapData?.countries.length ?? 0) === 0 ? (
+          <div className="mt-6 rounded-[2rem] border border-ink/10 bg-card/80 p-6 text-sm leading-7 text-muted shadow-panel">
+            Live WHO data is currently unavailable. AfricWatch is set to refresh only with verified WHO data on a monthly cadence and will not substitute seeded figures.
+          </div>
+        ) : null}
         <div className="mt-4 text-sm text-muted">
           {selectedCountry
             ? `Selected country: ${selectedCountry.country}. KPI cards now reflect the clicked map area.`

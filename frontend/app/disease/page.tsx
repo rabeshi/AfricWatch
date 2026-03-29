@@ -26,6 +26,11 @@ export default async function DiseasePage({
       <div className="mt-10">
         <AfricaChoropleth countries={mapData.countries} layer="forecastRisk" />
       </div>
+      {mapData.countries.length === 0 ? (
+        <div className="mt-6 rounded-[2rem] border border-white/10 bg-card/80 p-6 text-sm leading-7 text-muted shadow-panel">
+          Live WHO data is currently unavailable for this module. AfricWatch will wait for the next verified monthly refresh instead of showing synthetic fallback values.
+        </div>
+      ) : null}
       <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {mapData.kpis.map((kpi) => (
           <KpiCard key={kpi.label} kpi={kpi} />

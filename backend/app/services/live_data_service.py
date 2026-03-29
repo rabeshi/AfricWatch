@@ -6,10 +6,9 @@ import math
 import time
 from typing import Any
 
-from app.data.seed_data import get_dataset as get_seed_dataset
 from app.services.who_client import WhoGhoClient
 
-CACHE_TTL_SECONDS = 60 * 60 * 6
+CACHE_TTL_SECONDS = 60 * 60 * 24 * 30
 
 
 @dataclass(frozen=True)
@@ -363,8 +362,10 @@ async def get_dataset(disease: str) -> dict[str, Any]:
 
     try:
         dataset = await _build_live_dataset(normalized_disease)
-    except Exception:
-        dataset = get_seed_dataset(normalized_disease)
+    except Exception as exc:
+        if cached:
+            return cached[1]
+        raise RuntimeError(f"WHO live data is currently unavailable for {normalized_disease}") from exc
 
     _CACHE[normalized_disease] = (time.time(), dataset)
     return dataset

@@ -56,6 +56,17 @@ export default async function ForecastPage({
   const horizon = searchParams?.horizon === "30d" || searchParams?.horizon === "60d" ? searchParams.horizon : "90d";
   const model = searchParams?.model === "arima" || searchParams?.model === "ets" ? searchParams.model : "damped_trend";
   const mapData = await getMapData(disease, "forecastRisk");
+  if (mapData.countries.length === 0) {
+    return (
+      <div className="mx-auto max-w-7xl px-6 py-14 lg:px-8">
+        <SectionTitle
+          eyebrow="Forecast center"
+          title="WHO forecast inputs are currently unavailable."
+          description="AfricWatch is configured to show verified WHO-backed data only. When the WHO feed is unavailable, this page stays empty until the next monthly refresh."
+        />
+      </div>
+    );
+  }
   const sortedCountries = mapData.countries.slice().sort((left, right) => left.country.localeCompare(right.country));
   const selectedCountry =
     sortedCountries.find((item) => item.iso3 === searchParams?.country) ??

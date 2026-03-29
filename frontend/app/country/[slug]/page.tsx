@@ -1,4 +1,3 @@
-import { notFound } from "next/navigation";
 import { TrendChart } from "@/components/charts/TrendChart";
 import { KpiCard } from "@/components/ui/KpiCard";
 import { getCountryProfile } from "@/lib/api";
@@ -15,7 +14,17 @@ export default async function CountryPage({
   const profile = await getCountryProfile(params.slug, disease);
 
   if (!profile) {
-    notFound();
+    return (
+      <div className="mx-auto max-w-7xl px-6 py-14 lg:px-8">
+        <div className="max-w-3xl rounded-[2rem] border border-white/10 bg-card/80 p-8 shadow-panel">
+          <div className="text-xs uppercase tracking-[0.32em] text-accentSoft">Country explorer</div>
+          <h1 className="mt-3 text-3xl font-semibold tracking-tight">WHO country data unavailable</h1>
+          <p className="mt-5 text-base leading-7 text-muted">
+            AfricWatch could not load verified WHO data for this country right now, so it is intentionally not showing placeholder country metrics.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   const incidenceUnit = profile.disease === "malaria" ? "/1,000" : "/100,000";

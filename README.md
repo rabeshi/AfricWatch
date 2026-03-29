@@ -16,6 +16,7 @@ AfricWatch is a Pan-African disease intelligence platform designed for ministrie
 - Primary source: `WHO GHO OData API` at `https://ghoapi.azureedge.net/api/`
 - Delivery model: `platform experience`, not a single dashboard
 - Current live-data note: malaria is sourced from live WHO GHO country indicators; the HPV module uses live WHO cervical cancer burden indicators as the closest public WHO proxy
+- Data policy: if WHO data is unavailable, AfricWatch does not invent replacement values and instead waits for the next verified monthly refresh
 
 ## Monorepo Structure
 
@@ -31,7 +32,7 @@ AfricWatch/
 
 - Large interactive Africa choropleth map on the homepage
 - Disease switching between malaria and HPV
-- Live WHO-backed country metrics with seeded fallback when the WHO feed is unavailable
+- Live WHO-backed country metrics with no synthetic fallback values
 - Headline KPIs for burden, mortality, risk, and rising trends
 - Country explorer with historical and forecast analytics
 - Forecast center with 30/60/90-day horizon selection
@@ -105,7 +106,8 @@ Backend:  https://africwatch-api.onrender.com/
 
 ### Production Notes
 
-- The backend now attempts live WHO GHO retrieval first and falls back to seeded data if the WHO feed is unavailable.
+- The backend refreshes verified WHO data on a monthly cadence.
+- If the WHO feed is unavailable and no verified WHO snapshot is already cached, AfricWatch shows an unavailable state instead of synthetic fallback values.
 - The HPV module currently uses live WHO cervical cancer burden indicators as the public-data proxy for HPV-related burden.
 - Live API-driven disease and forecast responses depend on the backend being reachable.
 - ARIMA and ETS forecasting require the scientific Python stack in `backend/requirements.txt`, which is already included for deployment.

@@ -1,7 +1,7 @@
-import { diseaseBundles, mockInsights, mockMapPayload } from "@/lib/constants";
 import { CountryProfile, DiseaseSlug, InsightsPayload, MapLayer, MapPayload } from "@/lib/types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+const MONTHLY_REVALIDATE_SECONDS = 60 * 60 * 24 * 30;
 
 function normalizeDisease(disease: string): DiseaseSlug {
   return disease === "hpv" ? "hpv" : "malaria";
@@ -11,75 +11,69 @@ export function slugifyCountryName(country: string): string {
   return country.toLowerCase().replaceAll(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 }
 
-function buildFallbackProfile(country: MapPayload["countries"][number], disease: DiseaseSlug): CountryProfile {
-  const incidenceUnit = disease === "malaria" ? "/1,000" : "/100,000";
+function emptyMapPayload(disease: DiseaseSlug, layer: MapLayer): MapPayload {
   return {
-    country: country.country,
-    iso3: country.iso3,
     disease,
-    summary: `${country.country} is being shown from the latest available AfricWatch dataset while richer profile details load.`,
-    metrics: country,
-    history: [
-      { year: 2019, value: Number((country.incidenceRate * 0.88).toFixed(1)) },
-      { year: 2020, value: Number((country.incidenceRate * 0.91).toFixed(1)) },
-      { year: 2021, value: Number((country.incidenceRate * 0.94).toFixed(1)) },
-      { year: 2022, value: Number((country.incidenceRate * 0.97).toFixed(1)) },
-      { year: 2023, value: Number(country.incidenceRate.toFixed(1)) }
-    ],
-    forecast: [
-      { year: "Day 30", value: country.incidenceRate, lower: country.incidenceRate * 0.96, upper: country.incidenceRate * 1.04 }
-    ],
-    recommendations: [
-      `Review the latest WHO burden signal for ${country.country}.`,
-      `Interpret the current incidence value (${country.incidenceRate}${incidenceUnit}) together with the country risk score.`,
+    year: new Date().getUTCFullYear(),
+    layer,
+    countries: [],
+    kpis: [
+      { label: "Total estimated cases", value: "Unavailable", change: "WHO feed unavailable" },
+      { label: "Median incidence rate", value: "Unavailable", change: "Monthly refresh pending" },
+      { label: "Highest forecast risk", value: "Unavailable", change: "No live WHO response" },
+      { label: "Countries with rising trends", value: "Unavailable", change: "No verified dataset loaded" }
     ]
   };
 }
 
-async function safeFetch<T>(path: string, fallback: T): Promise<T> {
+function emptyInsights(disease: DiseaseSlug): InsightsPayload {
+  return {
+    narrative:
+      disease === "malaria"
+        ? "Live WHO malaria data is currently unavailable. AfricWatch is configured to refresh with verified WHO data monthly and will not invent fallback burden values."
+        : "Live WHO cervical cancer proxy data for the HPV module is currently unavailable. AfricWatch is configured to refresh with verified WHO data monthly and will not invent fallback burden values.",
+    elevatedRisk: [],
+    improving: [],
+    recommendations: [
+      "Wait for the next successful WHO refresh before making burden comparisons.",
+      "Treat this module as unavailable rather than inferred from placeholder data."
+    ]
+  };
+}
+
+async function safeFetch<T>(path: string): Promise<T | null> {
   try {
     const response = await fetch(`${API_BASE}${path}`, {
-      next: { revalidate: 3600 }
+      next: { revalidate: MONTHLY_REVALIDATE_SECONDS }
     });
     if (!response.ok) {
-      return fallback;
+      return null;
     }
     return (await response.json()) as T;
   } catch {
-    return fallback;
+    return null;
   }
 }
 
 export async function getMapData(disease: DiseaseSlug = "malaria", layer: MapLayer = "incidence"): Promise<MapPayload> {
   const safeDisease = normalizeDisease(disease);
-  return safeFetch(`/api/v1/map-data?disease=${safeDisease}&year=2024&layer=${layer}`, {
-    ...diseaseBundles[safeDisease].map,
-    layer
-  });
+  return (await safeFetch<MapPayload>(`/api/v1/map-data?disease=${safeDisease}&year=2024&layer=${layer}`)) ?? emptyMapPayload(safeDisease, layer);
 }
 
 export async function getInsights(disease: DiseaseSlug = "malaria"): Promise<InsightsPayload> {
   const safeDisease = normalizeDisease(disease);
-  return safeFetch(`/api/v1/insights?disease=${safeDisease}`, diseaseBundles[safeDisease].insights ?? mockInsights);
+  return (await safeFetch<InsightsPayload>(`/api/v1/insights?disease=${safeDisease}`)) ?? emptyInsights(safeDisease);
 }
 
 export async function getCountryProfile(slug: string, disease: DiseaseSlug = "malaria"): Promise<CountryProfile | null> {
   const safeDisease = normalizeDisease(disease);
   const normalizedSlug = slugifyCountryName(slug);
-  const fallback = Object.entries(diseaseBundles[safeDisease].profiles).find(([key]) => slugifyCountryName(key) === normalizedSlug)?.[1];
-  if (!fallback) {
-    const mapData = await getMapData(safeDisease);
-    const liveCountry = mapData.countries.find((item) => slugifyCountryName(item.country) === normalizedSlug);
-    if (!liveCountry) {
-      return null;
-    }
-    return safeFetch(`/api/v1/countries/${liveCountry.iso3}?disease=${safeDisease}`, buildFallbackProfile(liveCountry, safeDisease));
+  const mapData = await getMapData(safeDisease);
+  const liveCountry = mapData.countries.find((item) => slugifyCountryName(item.country) === normalizedSlug);
+  if (!liveCountry) {
+    return null;
   }
-  return safeFetch(`/api/v1/countries/${fallback.iso3}?disease=${safeDisease}`, fallback);
-}
-
-export function getDiseaseBundle(disease: DiseaseSlug) {
-  return diseaseBundles[normalizeDisease(disease)];
+  return await safeFetch<CountryProfile>(`/api/v1/countries/${liveCountry.iso3}?disease=${safeDisease}`);
 }
 
 export async function getForecast(
@@ -87,9 +81,24 @@ export async function getForecast(
   country = "NGA",
   horizon: "30d" | "60d" | "90d" = "90d",
   model: "damped_trend" | "arima" | "ets" = "damped_trend"
-) {
+): Promise<{
+  disease: DiseaseSlug;
+  country: string;
+  indicator: string;
+  horizon: "30d" | "60d" | "90d";
+  model: "damped_trend" | "arima" | "ets";
+  points: Array<{ year: number | string; value: number; lower: number; upper: number }>;
+}> {
   const safeDisease = normalizeDisease(disease);
-  return safeFetch(`/api/v1/forecast?disease=${safeDisease}&country=${country}&indicator=cases&horizon=${horizon}&model=${model}`, {
+  return (
+    (await safeFetch<{
+      disease: DiseaseSlug;
+      country: string;
+      indicator: string;
+      horizon: "30d" | "60d" | "90d";
+      model: "damped_trend" | "arima" | "ets";
+      points: Array<{ year: number | string; value: number; lower: number; upper: number }>;
+    }>(`/api/v1/forecast?disease=${safeDisease}&country=${country}&indicator=cases&horizon=${horizon}&model=${model}`)) ?? {
     disease: safeDisease,
     country,
     indicator: "cases",
