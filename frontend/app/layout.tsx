@@ -5,7 +5,8 @@ import { ThemeProvider } from "@/components/providers/ThemeProvider";
 
 export const metadata: Metadata = {
   title: "AfricWatch",
-  description: "African disease intelligence platform powered by WHO GHO data"
+  description: "African disease intelligence platform powered by WHO GHO data",
+  metadataBase: new URL("https://africwatch.vercel.app")
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

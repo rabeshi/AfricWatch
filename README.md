@@ -2,6 +2,12 @@
 
 AfricWatch is a Pan-African disease intelligence platform designed for ministries, researchers, NGOs, and health planners. It combines WHO Global Health Observatory (GHO) disease data, continent-scale geospatial visualization, forecast analytics, risk scoring, and policy-facing insights in a public, authentication-free platform.
 
+## Live Deployment
+
+- Frontend: `https://africwatch.vercel.app/`
+- Backend: `https://africwatch-api.onrender.com/`
+- Backend health check: `https://africwatch-api.onrender.com/health`
+
 ## Product Positioning
 
 - Product name: `AfricWatch`
@@ -88,11 +94,11 @@ Optional config is included in [render.yaml](/c:/Users/georg/OneDrive/Documents/
 2. Add that URL to Vercel as `NEXT_PUBLIC_API_BASE_URL`.
 3. Deploy the frontend.
 
-### Example Production URLs
+### Production URLs
 
 ```text
-Frontend: https://africwatch.vercel.app
-Backend:  https://africwatch-api.onrender.com
+Frontend: https://africwatch.vercel.app/
+Backend:  https://africwatch-api.onrender.com/
 ```
 
 ### Production Notes
