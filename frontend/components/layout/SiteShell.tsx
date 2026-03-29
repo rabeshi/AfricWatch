@@ -1,9 +1,10 @@
+import type { Route } from "next";
 import Link from "next/link";
 import { ReactNode } from "react";
 import { AfricWatchLogo } from "@/components/layout/AfricWatchLogo";
 import { FooterPicker } from "@/components/ui/FooterPicker";
 
-const navItems = [
+const navItems: Array<{ href: Route; label: string }> = [
   { href: "/disease", label: "Disease Dashboard" },
   { href: "/forecast", label: "Forecast Center" },
   { href: "/publications", label: "Publications" },

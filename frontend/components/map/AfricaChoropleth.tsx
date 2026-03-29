@@ -127,7 +127,7 @@ export function AfricaChoropleth({
           responsive: true,
           scrollZoom: true
         }}
-        onClick={(event) => {
+        onClick={(event: { points?: Array<{ location?: string }> }) => {
           const iso3 = event.points?.[0]?.location;
           if (iso3 && onCountrySelect) {
             onCountrySelect(String(iso3));
