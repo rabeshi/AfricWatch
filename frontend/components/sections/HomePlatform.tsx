@@ -1,15 +1,16 @@
 "use client";
 
+import type { Route } from "next";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { TrendChart } from "@/components/charts/TrendChart";
 import { AfricaChoropleth } from "@/components/map/AfricaChoropleth";
 import { Hero } from "@/components/sections/Hero";
 import { InsightsPanel } from "@/components/sections/InsightsPanel";
 import { KpiCard } from "@/components/ui/KpiCard";
 import { SectionTitle } from "@/components/ui/SectionTitle";
-import { getDiseaseBundle } from "@/lib/api";
-import { CountryMetric, DiseaseSlug, Kpi } from "@/lib/types";
+import { getCountryProfile, getInsights, getMapData, slugifyCountryName } from "@/lib/api";
+import { CountryMetric, CountryProfile, DiseaseSlug, Kpi, MapPayload } from "@/lib/types";
 
 const diseaseOptions: Array<{ slug: DiseaseSlug; label: string }> = [
   { slug: "malaria", label: "Malaria" },
@@ -44,22 +45,54 @@ function buildCountryKpis(country: CountryMetric): Kpi[] {
 export function HomePlatform() {
   const [disease, setDisease] = useState<DiseaseSlug>("malaria");
   const [selectedIso3, setSelectedIso3] = useState<string | null>(null);
+  const [mapData, setMapData] = useState<MapPayload | null>(null);
+  const [insights, setInsights] = useState<{ narrative: string; elevatedRisk: string[]; improving: string[]; recommendations: string[] } | null>(null);
+  const [selectedProfile, setSelectedProfile] = useState<CountryProfile | null>(null);
 
-  const bundle = getDiseaseBundle(disease);
-  const selectedCountry = bundle.map.countries.find((item) => item.iso3 === selectedIso3) ?? null;
-  const highlightedCountry = selectedCountry ?? bundle.map.countries[0];
-  const profileKey = highlightedCountry.country.toLowerCase();
-  const selectedProfile = bundle.profiles[profileKey] ?? Object.values(bundle.profiles)[0];
+  useEffect(() => {
+    let active = true;
+    setSelectedIso3(null);
+    void Promise.all([getMapData(disease, "incidence"), getInsights(disease)]).then(([nextMapData, nextInsights]) => {
+      if (!active) {
+        return;
+      }
+      setMapData(nextMapData);
+      setInsights(nextInsights);
+    });
+    return () => {
+      active = false;
+    };
+  }, [disease]);
+
+  const selectedCountry = mapData?.countries.find((item) => item.iso3 === selectedIso3) ?? null;
+  const highlightedCountry = selectedCountry ?? mapData?.countries[0] ?? null;
+
+  useEffect(() => {
+    let active = true;
+    if (!highlightedCountry) {
+      setSelectedProfile(null);
+      return () => {
+        active = false;
+      };
+    }
+    void getCountryProfile(slugifyCountryName(highlightedCountry.country), disease).then((profile) => {
+      if (active) {
+        setSelectedProfile(profile);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [disease, highlightedCountry]);
 
   const displayKpis = useMemo(
-    () => (selectedCountry ? buildCountryKpis(selectedCountry) : bundle.map.kpis),
-    [bundle.map.kpis, selectedCountry]
+    () => (selectedCountry ? buildCountryKpis(selectedCountry) : mapData?.kpis ?? []),
+    [mapData?.kpis, selectedCountry]
   );
 
-  const priorityCountries = bundle.map.countries
-    .slice()
-    .sort((left, right) => right.forecastRisk - left.forecastRisk)
-    .slice(0, 2);
+  const priorityCountries = (mapData?.countries ?? []).slice().sort((left, right) => right.forecastRisk - left.forecastRisk).slice(0, 2);
+  const chartHistory = selectedProfile?.history ?? [];
+  const chartForecast = selectedProfile?.forecast;
 
   return (
     <div className="pb-20">
@@ -94,7 +127,7 @@ export function HomePlatform() {
         </div>
         <div className="mt-10">
           <AfricaChoropleth
-            countries={bundle.map.countries}
+            countries={mapData?.countries ?? []}
             layer="incidence"
             onCountrySelect={(iso3) => setSelectedIso3(iso3)}
           />
@@ -114,9 +147,9 @@ export function HomePlatform() {
       <section className="mx-auto max-w-7xl px-6 py-12 lg:px-8">
         <div className="grid gap-6 xl:grid-cols-2">
           <TrendChart
-            title={`${selectedProfile.country} ${disease === "malaria" ? "burden" : "HPV burden"} trajectory and modeled forecast`}
-            history={selectedProfile.history}
-            forecast={selectedProfile.forecast}
+            title={`${selectedProfile?.country ?? "Priority country"} ${disease === "malaria" ? "burden" : "HPV burden"} trajectory and modeled forecast`}
+            history={chartHistory}
+            forecast={chartForecast}
           />
           <div className="rounded-[2rem] border border-ink/10 bg-card/80 p-6 shadow-panel">
             <div className="text-xs uppercase tracking-[0.32em] text-accentSoft">Priority countries</div>
@@ -139,7 +172,7 @@ export function HomePlatform() {
                     <div>Trend: {country.trend}</div>
                   </div>
                   <Link
-                    href={`/country/${country.country.toLowerCase().replaceAll(" ", "-")}?disease=${disease}`}
+                    href={`/country/${slugifyCountryName(country.country)}?disease=${disease}` as Route}
                     className="mt-4 inline-block text-sm text-accentSoft"
                   >
                     Open country explorer
@@ -152,7 +185,7 @@ export function HomePlatform() {
       </section>
 
       <section className="mx-auto max-w-7xl px-6 py-8 lg:px-8">
-        <InsightsPanel insights={bundle.insights} />
+        {insights ? <InsightsPanel insights={insights} /> : null}
       </section>
     </div>
   );

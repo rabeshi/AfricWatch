@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from app.data.seed_data import get_dataset
 from app.models.schemas import CountryMetric, InsightsResponse, KpiItem, MapResponse
+from app.services.live_data_service import get_dataset
 
 
-def get_map_data(disease: str, layer: str, year: int) -> MapResponse:
-    dataset = get_dataset(disease)
+async def get_map_data(disease: str, layer: str, year: int) -> MapResponse:
+    dataset = await get_dataset(disease)
     countries = [CountryMetric(**item) for item in dataset["countries"]]
     return MapResponse(
         disease=disease,
@@ -16,5 +16,6 @@ def get_map_data(disease: str, layer: str, year: int) -> MapResponse:
     )
 
 
-def get_insights(disease: str) -> InsightsResponse:
-    return InsightsResponse(**get_dataset(disease)["insights"])
+async def get_insights(disease: str) -> InsightsResponse:
+    dataset = await get_dataset(disease)
+    return InsightsResponse(**dataset["insights"])

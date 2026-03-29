@@ -18,6 +18,8 @@ export default async function CountryPage({
     notFound();
   }
 
+  const incidenceUnit = profile.disease === "malaria" ? "/1,000" : "/100,000";
+
   return (
     <div className="mx-auto max-w-7xl px-6 py-14 lg:px-8">
       <div className="max-w-4xl">
@@ -28,7 +30,7 @@ export default async function CountryPage({
       </div>
       <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <KpiCard kpi={{ label: "Estimated cases", value: profile.metrics.cases.toLocaleString(), change: profile.metrics.trend }} />
-        <KpiCard kpi={{ label: "Incidence rate", value: `${profile.metrics.incidenceRate}/1,000`, change: "Latest modeled year" }} />
+        <KpiCard kpi={{ label: "Incidence rate", value: `${profile.metrics.incidenceRate}${incidenceUnit}`, change: "Latest WHO-backed profile" }} />
         <KpiCard kpi={{ label: "Mortality rate", value: `${profile.metrics.mortalityRate}`, change: "Deaths-related burden signal" }} />
         <KpiCard kpi={{ label: "Forecast risk", value: `${profile.metrics.forecastRisk}/100`, change: "Next-quarter risk" }} />
       </div>

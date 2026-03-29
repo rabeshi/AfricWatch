@@ -14,10 +14,11 @@ def diseases() -> list[DiseaseInfo]:
 @router.get("/methodology", response_model=MethodologyResponse)
 def methodology() -> MethodologyResponse:
     return MethodologyResponse(
-        source="WHO Global Health Observatory OData API",
+        source="WHO Global Health Observatory OData API with seeded fallback",
         notes=[
             "Africa-only analytical filtering",
-            "Malaria-first disease registry",
+            "Malaria is sourced from live WHO malaria indicators",
+            "The HPV module uses WHO cervical cancer burden indicators as a public-data proxy",
             "Forecast uncertainty should be communicated in every predictive view",
         ],
         forecast_model="Baseline trend-aware extrapolation; designed to upgrade to Prophet or ARIMA",

@@ -1,16 +1,16 @@
 from fastapi import APIRouter, HTTPException, Query
 
-from app.data.seed_data import get_dataset
 from app.models.schemas import CountryMetric, CountryProfile, TrendPoint
 from app.services.forecast_service import generate_forecast
+from app.services.live_data_service import get_dataset
 from app.services.recommendation_service import recommendations_for_country
 
 router = APIRouter()
 
 
 @router.get("/countries/{country_code}", response_model=CountryProfile)
-def country_profile(country_code: str, disease: str = Query(default="malaria")) -> CountryProfile:
-    dataset = get_dataset(disease)
+async def country_profile(country_code: str, disease: str = Query(default="malaria")) -> CountryProfile:
+    dataset = await get_dataset(disease)
     country = next((item for item in dataset["countries"] if item["iso3"] == country_code.upper()), None)
     if country is None:
         raise HTTPException(status_code=404, detail="Country not found")
@@ -25,6 +25,6 @@ def country_profile(country_code: str, disease: str = Query(default="malaria")) 
         summary=f"{country['country']} remains a priority {disease.upper()} surveillance context within {country['region']}.",
         metrics=CountryMetric(**country),
         history=history,
-        forecast=generate_forecast(disease, country["iso3"]),
-        recommendations=recommendations_for_country(disease, country["iso3"]),
+        forecast=generate_forecast(history_values),
+        recommendations=recommendations_for_country(country),
     )

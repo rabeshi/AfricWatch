@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-from app.data.seed_data import get_dataset
 from app.models.schemas import ForecastPoint
 from statsmodels.tsa.arima.model import ARIMA
 from statsmodels.tsa.holtwinters import ExponentialSmoothing
 
 
-def generate_forecast(disease: str, iso3: str) -> list[ForecastPoint]:
-    history = get_dataset(disease)["history"].get(iso3)
+def generate_forecast(history: list[float] | None = None) -> list[ForecastPoint]:
     if not history:
         history = [3.0, 3.2, 3.1, 3.4, 3.6, 3.8, 3.9]
 
@@ -48,8 +46,7 @@ def _ets_forecast(history: list[float], step_count: int) -> list[float]:
     return [round(float(value), 2) for value in fitted.forecast(step_count)]
 
 
-def generate_short_term_forecast(disease: str, iso3: str, horizon: str, model_name: str) -> list[ForecastPoint]:
-    history = get_dataset(disease)["history"].get(iso3)
+def generate_short_term_forecast(history: list[float] | None, horizon: str, model_name: str) -> list[ForecastPoint]:
     if not history:
         history = [3.0, 3.2, 3.1, 3.4, 3.6, 3.8, 3.9]
 

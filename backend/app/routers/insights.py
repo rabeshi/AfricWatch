@@ -7,5 +7,5 @@ router = APIRouter()
 
 
 @router.get("/insights", response_model=InsightsResponse)
-def insights(disease: str = Query(default="malaria")) -> InsightsResponse:
-    return get_insights(disease)
+async def insights(disease: str = Query(default="malaria")) -> InsightsResponse:
+    return await get_insights(disease)

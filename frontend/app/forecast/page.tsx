@@ -1,7 +1,7 @@
 import { ForecastControls } from "@/components/forecast/ForecastControls";
 import { TrendChart } from "@/components/charts/TrendChart";
 import { SectionTitle } from "@/components/ui/SectionTitle";
-import { getDiseaseBundle, getForecast } from "@/lib/api";
+import { getCountryProfile, getForecast, getMapData, slugifyCountryName } from "@/lib/api";
 import { CountryMetric, CountryProfile, DiseaseSlug, TrendPoint } from "@/lib/types";
 
 function buildHistory(selectedCountry: CountryMetric, profile?: CountryProfile): TrendPoint[] {
@@ -55,14 +55,16 @@ export default async function ForecastPage({
   const disease = searchParams?.disease === "hpv" ? "hpv" : "malaria";
   const horizon = searchParams?.horizon === "30d" || searchParams?.horizon === "60d" ? searchParams.horizon : "90d";
   const model = searchParams?.model === "arima" || searchParams?.model === "ets" ? searchParams.model : "damped_trend";
-  const bundle = getDiseaseBundle(disease);
-  const sortedCountries = bundle.map.countries.slice().sort((left, right) => left.country.localeCompare(right.country));
+  const mapData = await getMapData(disease, "forecastRisk");
+  const sortedCountries = mapData.countries.slice().sort((left, right) => left.country.localeCompare(right.country));
   const selectedCountry =
     sortedCountries.find((item) => item.iso3 === searchParams?.country) ??
-    bundle.map.countries.slice().sort((left, right) => right.forecastRisk - left.forecastRisk)[0];
-  const selectedProfile = bundle.profiles[selectedCountry.country.toLowerCase()];
-  const [forecast] = await Promise.all([getForecast(disease, selectedCountry.iso3, horizon, model)]);
-  const history = buildHistory(selectedCountry, selectedProfile);
+    mapData.countries.slice().sort((left, right) => right.forecastRisk - left.forecastRisk)[0];
+  const [forecast, selectedProfile] = await Promise.all([
+    getForecast(disease, selectedCountry.iso3, horizon, model),
+    getCountryProfile(slugifyCountryName(selectedCountry.country), disease)
+  ]);
+  const history = buildHistory(selectedCountry, selectedProfile ?? undefined);
   const modelLabel = model === "arima" ? "ARIMA" : model === "ets" ? "ETS" : "Damped Trend";
 
   return (

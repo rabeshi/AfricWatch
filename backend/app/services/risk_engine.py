@@ -1,10 +1,6 @@
 from __future__ import annotations
 
-from app.data.seed_data import get_dataset
-
-
-def score_country(disease: str, iso3: str) -> dict[str, float | int | str]:
-    country = next(item for item in get_dataset(disease)["countries"] if item["iso3"] == iso3)
+def score_country(country: dict[str, float | int | str]) -> dict[str, float | int | str]:
     recent_trend = 90 if country["trend"] == "rising" else 55 if country["trend"] == "stable" else 35
     mortality = min(country["mortalityRate"] * 2, 100)
     growth = min(country["incidenceRate"] / 4, 100)
