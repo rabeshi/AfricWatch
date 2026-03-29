@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --color-bg: 8 28 26;
+  --color-surface: 15 47 44;
+  --color-card: 19 59 55;
+  --color-accent: 44 165 141;
+  --color-accent-soft: 143 214 200;
+  --color-sand: 215 199 162;
+  --color-ink: 232 243 240;
+  --color-muted: 159 183 178;
+  --color-danger: 239 125 87;
+  --color-warning: 242 193 78;
+}
+
+html[data-theme="black"] {
+  color-scheme: dark;
+  --color-bg: 8 12 18;
+  --color-surface: 18 24 32;
+  --color-card: 24 31 41;
+  --color-accent: 61 140 245;
+  --color-accent-soft: 154 196 255;
+  --color-sand: 208 215 226;
+  --color-ink: 244 247 251;
+  --color-muted: 162 174 190;
+  --color-danger: 240 104 91;
+  --color-warning: 244 193 86;
+}
+
+html[data-theme="white"] {
+  color-scheme: light;
+  --color-bg: 244 246 242;
+  --color-surface: 255 255 255;
+  --color-card: 235 241 236;
+  --color-accent: 10 116 100;
+  --color-accent-soft: 66 154 140;
+  --color-sand: 184 168 129;
+  --color-ink: 17 32 29;
+  --color-muted: 87 106 100;
+  --color-danger: 190 85 59;
+  --color-warning: 185 143 44;
+}
+
+html[data-theme="green"] {
+  color-scheme: dark;
+  --color-bg: 7 24 16;
+  --color-surface: 16 56 36;
+  --color-card: 22 72 46;
+  --color-accent: 90 188 122;
+  --color-accent-soft: 176 228 188;
+  --color-sand: 204 196 144;
+  --color-ink: 236 248 239;
+  --color-muted: 161 191 166;
+  --color-danger: 237 129 91;
+  --color-warning: 237 198 78;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-bg text-ink antialiased;
+  background-image:
+    radial-gradient(circle at top left, rgb(var(--color-accent) / 0.22), transparent 28%),
+    radial-gradient(circle at bottom right, rgb(var(--color-sand) / 0.14), transparent 25%),
+    linear-gradient(180deg, rgb(var(--color-bg) / 0.92) 0%, rgb(var(--color-bg)) 100%);
+}
+
+a {
+  @apply text-inherit no-underline;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--color-accent)) transparent;
+}
